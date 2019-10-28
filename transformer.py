@@ -1,16 +1,20 @@
 """Testing instance of transformer
 """
 
-import argparse
+import json
+import os
+
+from terrautils.metadata import clean_metadata as tr_clean_metadata
+import terrautils.lemnatec
+
 import transformer_class
 
-#pylint: disable=unused-argument
-def add_parameters(parser: argparse.ArgumentParser) -> None:
-    """Adds parameters
-    Arguments:
-        parser: instance of argparse
-    """
+terrautils.lemnatec.SENSOR_METADATA_CACHE = os.path.dirname(os.path.realpath(__file__))
 
+# List of sensors that cannot be cleaned
+SKIP_SENSORS = ['Full Field']
+
+#pylint: disable=unused-argument
 def check_continue(transformer: transformer_class.Transformer, check_md: dict, transformer_md: dict, full_md: dict) -> list:
     """Checks if conditions are right for continuing processing
     Arguments:
@@ -19,8 +23,13 @@ def check_continue(transformer: transformer_class.Transformer, check_md: dict, t
         Returns a dictionary containining the return code for continuing or not, and
         an error message if there's an error
     """
-    print("check_continue(): received arguments: %s" % str(kwargs))
-    return (0)
+    # Check that the sensor is one to process. Returns a positive value if it's to be skipped so that nothing gets
+    # downloaded.
+    if 'sensor' in check_md:
+        return (1) if check_md['sensor'] in SKIP_SENSORS else (0)
+
+    # Return a negative number if the sensor isn't specified
+    return (-1, "Sensor type not specified. Invalid runtime environment detected.")
 
 def perform_process(transformer: transformer_class.Transformer, check_md: dict, transformer_md: dict, full_md: dict) -> dict:
     """Performs the processing of the data
@@ -29,5 +38,49 @@ def perform_process(transformer: transformer_class.Transformer, check_md: dict, 
     Return:
         Returns a dictionary with the results of processing
     """
-    print("perform_process(): received arguments: %s" % str(kwargs))
-    return {'code': 0, 'message': "Everything is going swimmingly"}
+    # See if we need to do anything
+    if check_md['sensor'] in SKIP_SENSORS:
+        return {'code': 0, 'error': "Skipping sensor %s does not have metadata that needs to be cleaned." % (check_md['sensor'])}
+
+    # Get the working metadata
+    if '@context' in full_md and 'content' in full_md:
+        parse_md = full_md['content']
+    else:
+        parse_md = full_md
+
+    # Make sure we have something to work with
+    if not parse_md:
+        return {'code': -1000, 'error': "No metadata specifed" if not full_md else "Invalid metadata detected"}
+
+    # Clean the metadata and prepare the result
+    md_json = tr_clean_metadata(parse_md, check_md['sensor'])
+    format_md = {
+        '@context': ['https://clowder.ncsa.illinois.edu/contexts/metadata.jsonld',
+                     {'@vocab': 'https://terraref.ncsa.illinois.edu/metadata/uamac#'}],
+        'content': md_json,
+        'agent': {
+            '@type': 'cat:user'
+        }
+    }
+
+    if check_md['userid']:
+        format_md['agent']['user_id'] = check_md['userid']
+ 
+    # Create the output file and write the metadata to it
+    filename_parts = os.path.splitext(os.path.basename(check_md['trigger_name']))
+    new_filename = filename_parts[0] + '_cleaned' + filename_parts[1]
+    new_path = os.path.join(check_md['working_folder'], new_filename)
+
+    with open(new_path, 'w') as out_file:
+        json.dump(format_md, out_file, indent=2, skipkeys=True)
+
+    result = \
+        {
+            'file': [{
+                'path': new_path,
+                'key': check_md['sensor']
+            }],
+            'code': 0
+        }
+
+    return result
