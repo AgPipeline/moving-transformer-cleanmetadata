@@ -3,7 +3,7 @@
 FROM agpipeline/gantry-base-image:latest
 LABEL maintainer="Chris Schnaufer <schnaufer@email.arizona.edu>"
 
-COPY configuration.py transformer.py requirements.txt packages.txt /home/extractor/
+COPY requirements.txt packages.txt /home/extractor/
 
 USER root
 
@@ -15,9 +15,12 @@ RUN [ -s /home/extractor/packages.txt ] && \
         apt-get autoremove -y && \
         apt-get clean && \
         rm -rf /var/lib/apt/lists/*) || \
-    echo 'No packages to install'
+    (echo 'No packages to install' && \
+        rm /home/extractor/packages.txt)
 
 RUN python3 -m pip install --no-cache-dir -r /home/extractor/requirements.txt && \
     rm /home/extractor/requirements.txt
 
 USER extractor
+
+COPY configuration.py transformer.py transformer_class.py /home/extractor/

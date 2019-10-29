@@ -3,6 +3,7 @@
 
 import json
 import os
+import logging
 
 from terrautils.metadata import clean_metadata as tr_clean_metadata
 import terrautils.lemnatec
@@ -31,6 +32,7 @@ def check_continue(transformer: transformer_class.Transformer, check_md: dict, t
     # Return a negative number if the sensor isn't specified
     return (-1, "Sensor type not specified. Invalid runtime environment detected.")
 
+#pylint: disable=unused-argument
 def perform_process(transformer: transformer_class.Transformer, check_md: dict, transformer_md: dict, full_md: dict) -> dict:
     """Performs the processing of the data
     Arguments:
@@ -53,6 +55,7 @@ def perform_process(transformer: transformer_class.Transformer, check_md: dict, 
         return {'code': -1000, 'error': "No metadata specifed" if not full_md else "Invalid metadata detected"}
 
     # Clean the metadata and prepare the result
+    logging.debug("Calling into clean_metadata with sensor '%s' and metadata %s", check_md['sensor'], str(parse_md))
     md_json = tr_clean_metadata(parse_md, check_md['sensor'])
     format_md = {
         '@context': ['https://clowder.ncsa.illinois.edu/contexts/metadata.jsonld',
@@ -64,6 +67,7 @@ def perform_process(transformer: transformer_class.Transformer, check_md: dict, 
     }
 
     if check_md['userid']:
+        logging.debug("Setting agent user_id to %s", check_md['userid'])
         format_md['agent']['user_id'] = check_md['userid']
  
     # Create the output file and write the metadata to it
@@ -71,6 +75,7 @@ def perform_process(transformer: transformer_class.Transformer, check_md: dict, 
     new_filename = filename_parts[0] + '_cleaned' + filename_parts[1]
     new_path = os.path.join(check_md['working_folder'], new_filename)
 
+    logging.debug("Writing cleaned metadata to file '%s'", new_path)
     with open(new_path, 'w') as out_file:
         json.dump(format_md, out_file, indent=2, skipkeys=True)
 

@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import logging
 
 import configuration
 
@@ -15,6 +16,7 @@ class Transformer():
         Arguments:
             kwargs: additional parameters passed into Transformer instance
         """
+        self.args = None
 
     # pylint: disable=no-self-use
     def add_parameters(self, parser: argparse.ArgumentParser) -> None:
@@ -41,6 +43,9 @@ class Transformer():
             args: result of calling argparse.parse_args
             metadata: the loaded metadata
         """
+        self.args = args
+
+        logging.debug("Transforming args to metadata: %s", str(args))
         check_md = {
             'trigger_name': args.metadata,
             'working_folder': args.working_space,
@@ -48,6 +53,7 @@ class Transformer():
             'userid': args.userid
         }
 
+        logging.debug("Request metadata: %s", str(check_md))
         return {'check_md': check_md,
                 'transformer_md': None,
                 'full_md': metadata
