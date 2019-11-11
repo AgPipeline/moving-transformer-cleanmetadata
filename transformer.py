@@ -1,4 +1,4 @@
-"""Testing instance of transformer
+"""Transformer for cleaning gantry metadata before further processing
 """
 
 import json
@@ -16,12 +16,12 @@ terrautils.lemnatec.SENSOR_METADATA_CACHE = os.path.dirname(os.path.realpath(__f
 SKIP_SENSORS = ['Full Field']
 
 #pylint: disable=unused-argument
-def check_continue(transformer: transformer_class.Transformer, check_md: dict, transformer_md: dict, full_md: dict) -> list:
+def check_continue(transformer: transformer_class.Transformer, check_md: dict, transformer_md: dict, full_md: dict) -> tuple:
     """Checks if conditions are right for continuing processing
     Arguments:
         transformer: instance of transformer class
     Return:
-        Returns a dictionary containining the return code for continuing or not, and
+        Returns a tuple containining the return code for continuing or not, and
         an error message if there's an error
     """
     # Check that the sensor is one to process. Returns a positive value if it's to be skipped so that nothing gets
@@ -42,7 +42,7 @@ def perform_process(transformer: transformer_class.Transformer, check_md: dict, 
     """
     # See if we need to do anything
     if check_md['sensor'] in SKIP_SENSORS:
-        return {'code': 0, 'error': "Skipping sensor %s does not have metadata that needs to be cleaned." % (check_md['sensor'])}
+        return {'code': 0, 'warning': "Skipping sensor %s does not have metadata that needs to be cleaned." % (check_md['sensor'])}
 
     # Get the working metadata
     if '@context' in full_md and 'content' in full_md:
