@@ -12,7 +12,7 @@ The **sensor** parameter is *required* and refers to the gantry sensor the metad
 
 The **userid** parameter is *optional* and allows additional identification information to be stored with the cleaned metadata.
 
-### Sample Docker Command line
+## Sample Docker Command line
 Below is a sample command line that shows how the metadata cleaner Docker image could be run.
 An explanation of the command line options used follows.
 Be sure to read up on the [docker run](https://docs.docker.com/engine/reference/run/) command line for more information.
