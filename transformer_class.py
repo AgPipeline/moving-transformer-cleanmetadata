@@ -36,13 +36,13 @@ class Transformer():
                         ' author ' + configuration.AUTHOR_NAME + ' ' + configuration.AUTHOR_EMAIL
 
 
-    #pylint: disable=no-self-use
-    def get_transformer_params(self, args: argparse.Namespace, metadata: dict) -> dict:
+    def get_transformer_params(self, args: argparse.Namespace, metadata: list) -> dict:
         """Returns a parameter list for processing data
         Arguments:
             args: result of calling argparse.parse_args
             metadata: the loaded metadata
         """
+        # pylint: disable=no-self-use
         self.args = args
 
         logging.debug("Transforming args to metadata: %s", str(args))

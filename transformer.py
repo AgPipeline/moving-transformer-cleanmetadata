@@ -15,44 +15,45 @@ terrautils.lemnatec.SENSOR_METADATA_CACHE = os.path.dirname(os.path.realpath(__f
 # List of sensors that cannot be cleaned
 SKIP_SENSORS = ['Full Field']
 
-#pylint: disable=unused-argument
-def check_continue(transformer: transformer_class.Transformer, check_md: dict, transformer_md: dict, full_md: dict) -> tuple:
+def check_continue(transformer: transformer_class.Transformer, check_md: dict, transformer_md: list, full_md: list) -> tuple:
     """Checks if conditions are right for continuing processing
     Arguments:
         transformer: instance of transformer class
     Return:
-        Returns a tuple containining the return code for continuing or not, and
+        Returns a tuple containing the return code for continuing or not, and
         an error message if there's an error
     """
+    # pylint: disable=unused-argument
     # Check that the sensor is one to process. Returns a positive value if it's to be skipped so that nothing gets
     # downloaded.
     if 'sensor' in check_md:
-        return (1) if check_md['sensor'] in SKIP_SENSORS else (0)
+        return tuple(1) if check_md['sensor'] in SKIP_SENSORS else (0)
 
     # Return a negative number if the sensor isn't specified
-    return (-1, "Sensor type not specified. Invalid runtime environment detected.")
+    return -1, "Sensor type not specified. Invalid runtime environment detected."
 
-#pylint: disable=unused-argument
-def perform_process(transformer: transformer_class.Transformer, check_md: dict, transformer_md: dict, full_md: dict) -> dict:
+def perform_process(transformer: transformer_class.Transformer, check_md: dict, transformer_md: list, full_md: list) -> dict:
     """Performs the processing of the data
     Arguments:
         transformer: instance of transformer class
     Return:
         Returns a dictionary with the results of processing
     """
+    # pylint: disable=unused-argument
     # See if we need to do anything
     if check_md['sensor'] in SKIP_SENSORS:
         return {'code': 0, 'warning': "Skipping sensor %s does not have metadata that needs to be cleaned." % (check_md['sensor'])}
 
     # Get the working metadata
-    if '@context' in full_md and 'content' in full_md:
-        parse_md = full_md['content']
+    metadata = full_md[0]
+    if '@context' in metadata and 'content' in metadata:
+        parse_md = metadata['content']
     else:
-        parse_md = full_md
+        parse_md = metadata
 
     # Make sure we have something to work with
     if not parse_md:
-        return {'code': -1000, 'error': "No metadata specifed" if not full_md else "Invalid metadata detected"}
+        return {'code': -1000, 'error': "No metadata specified" if not full_md else "Invalid metadata detected"}
 
     # Clean the metadata and prepare the result
     logging.debug("Calling into clean_metadata with sensor '%s' and metadata %s", check_md['sensor'], str(parse_md))
@@ -71,7 +72,7 @@ def perform_process(transformer: transformer_class.Transformer, check_md: dict, 
         format_md['agent']['user_id'] = check_md['userid']
  
     # Create the output file and write the metadata to it
-    filename_parts = os.path.splitext(os.path.basename(check_md['trigger_name']))
+    filename_parts = os.path.splitext(os.path.basename(check_md['trigger_name'][0]))
     new_filename = filename_parts[0] + '_cleaned' + filename_parts[1]
     new_path = os.path.join(check_md['working_folder'], new_filename)
 
